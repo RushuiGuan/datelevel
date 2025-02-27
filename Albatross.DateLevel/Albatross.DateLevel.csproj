@@ -4,7 +4,7 @@
 		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<LangVersion>Latest</LangVersion>
-		<PackageProjectUrl>$(RepositoryProjectRoot)/datelevel/Albatross.DateLevel</PackageProjectUrl>
+		<PackageProjectUrl>$(RepositoryProjectRoot)/Albatross.DateLevel</PackageProjectUrl>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\icon.png">

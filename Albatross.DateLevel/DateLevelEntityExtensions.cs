@@ -81,7 +81,7 @@ namespace Albatross.DateLevel {
 					} else {
 						foreach (var item in after) {
 							// if the end date of the found record is before the end date of the new record, simply remove the found record
-							if (item.EndDate <= src.EndDate) {
+							if (item.EndDate < src.EndDate) {
 								collection.Remove(item);
 							} else {
 								// here a record has been found to overlap the end date of the new record

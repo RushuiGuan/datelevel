@@ -982,6 +982,36 @@ namespace Albatross.DateLevel.Test {
 			});
 		}
 		[Fact]
+		public void SameValue_Insert3() {
+			var list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+					EndDate = DateOnlyValues.Mar31_2022
+				},
+				new SpreadSpec(1, DateOnlyValues.Apr1_2022, 200) {
+					EndDate = DateOnlyValues.Jun30_2022,
+				},
+				new SpreadSpec(1, DateOnlyValues.Jul1_2022, 300) {
+					EndDate = DateOnlyValues.MaxSqlDate
+				},
+			};
+			list.SetDateLevel<SpreadSpec, int>(new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+				EndDate = DateOnlyValues.Mar31_2022
+			}, true);
+			list.Sort(Compare);
+			Assert.Collection(list, args => {
+				Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.Mar31_2022, args.EndDate);
+			},
+			args => {
+				Assert.Equal(DateOnlyValues.Apr1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.Jun30_2022, args.EndDate);
+			},
+			args => {
+				Assert.Equal(DateOnlyValues.Jul1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+			});
+		}
+		[Fact]
 		public void SameValue_Append() {
 			var list = new List<SpreadSpec> {
 				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
