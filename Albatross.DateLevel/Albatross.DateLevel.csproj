@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>Latest</LangVersion>
 		<PackageProjectUrl>$(RepositoryProjectRoot)/Albatross.DateLevel</PackageProjectUrl>
+		<Description>An api to manage date level data (series of data with start date and end date)</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\icon.png">
