@@ -7,8 +7,8 @@ namespace Albatross.DateLevel.Test {
 	public class TestGetDateLevelEntityByDateRange {
 		[Fact]
 		public void No_Row() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				}
 			};
@@ -19,11 +19,11 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Single_Row() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 150) {
+				new Spec(1, DateOnlyValues.Feb1_2022, 150) {
 					EndDate = DateOnlyValues.Mar31_2022
 				}
 			};
@@ -36,17 +36,17 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Multiple_Rows() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) {
 					EndDate = DateOnlyValues.Feb28_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) {
+				new Spec(1, DateOnlyValues.Mar1_2022, 100) {
 					EndDate = DateOnlyValues.Mar31_2022
 				},
-				new SpreadSpec(2, DateOnlyValues.Apr1_2022, 100)
+				new Spec(2, DateOnlyValues.Apr1_2022, 100)
 			};
 			var result = list.GetOverlappedDateLevelEntities(1, new DateOnly(2022, 1, 31), new DateOnly(2022, 3, 7));
 			Assert.NotNull(result);
@@ -61,20 +61,20 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Multiple_Rows_With_Max_Date() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) {
 					EndDate = DateOnlyValues.Feb28_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) {
+				new Spec(1, DateOnlyValues.Mar1_2022, 100) {
 					EndDate = new DateOnly(2022, 3, 15)
 				},
-				new SpreadSpec(1, new DateOnly(2022, 3, 16), 100) {
+				new Spec(1, new DateOnly(2022, 3, 16), 100) {
 					EndDate = DateOnlyValues.Mar31_2022
 				},
-				new SpreadSpec(2, DateOnlyValues.Apr1_2022, 100)
+				new Spec(2, DateOnlyValues.Apr1_2022, 100)
 			};
 			var result = list.GetOverlappedDateLevelEntities(1, new DateOnly(2022, 2, 21), new DateOnly(2022, 4, 30));
 			Assert.NotNull(result);

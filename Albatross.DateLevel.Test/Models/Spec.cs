@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 
 namespace Albatross.DateLevel.Test {
-	public class SpreadSpec : DateLevelEntity<int> {
-		public SpreadSpec(int marketId, DateOnly startDate, decimal value) : base(startDate) {
+	public class Spec : DateLevelEntity<int> {
+		public Spec(int marketId, DateOnly startDate, decimal value) : base(startDate) {
 			this.MarketId = marketId;
 			this.Value = value;
 		}
@@ -22,20 +22,20 @@ namespace Albatross.DateLevel.Test {
 
 
 		public override bool HasSameValue(DateLevelEntity src) {
-			if (src is SpreadSpec other) {
+			if (src is Spec other) {
 				return other.Value == this.Value;
 			} else {
 				return false;
 			}
 		}
 		public override object Clone() {
-			return new SpreadSpec(MarketId, StartDate, Value) {
+			return new Spec(MarketId, StartDate, Value) {
 				EndDate = this.EndDate,
 			};
 		}
 	}
-	public class SpreadSpecEntityMap : EntityMap<SpreadSpec> {
-		public override void Map(EntityTypeBuilder<SpreadSpec> builder) {
+	public class SpreadSpecEntityMap : EntityMap<Spec> {
+		public override void Map(EntityTypeBuilder<Spec> builder) {
 			base.Map(builder);
 			builder.HasKey(p => p.Id).IsClustered(false);
 			builder.HasIndex(p => new { p.MarketId, p.StartDate, }).IsUnique().IsClustered(true);

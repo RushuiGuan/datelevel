@@ -29,7 +29,7 @@ namespace Albatross.DateLevel {
 		/// <param name="collection"></param>
 		/// <param name="src"></param>
 		/// <param name="insert"></param>
-		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src, bool insert = false)
+		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src, bool insert)
 			where K : IEquatable<K>
 			where T : DateLevelEntity<K> {
 			if (insert) {
@@ -133,6 +133,71 @@ namespace Albatross.DateLevel {
 					collection.Remove(src);
 				} else {
 					before.EndDate = src.StartDate.AddDays(-1);
+				}
+			}
+		}
+
+		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src)
+			where K : IEquatable<K>
+			where T : DateLevelEntity<K> {
+			if (src.StartDate > src.EndDate) {
+				throw new ArgumentException("Start date cannot be greater than end date");
+			}
+			if (collection.Count == 0) {
+				src.EndDate = IDateLevelEntity.MaxEndDate;
+				collection.Add(src);
+				return;
+			} else {
+				var remove = new List<T>();
+				var add = new List<T>{
+					src 
+				};
+				foreach (var item in collection.Where(x => x.Key.Equals(src.Key))) {
+					// source completely overlaps item, if same value, extend item.  otherwise remove item
+					if (src.StartDate <= item.StartDate && item.EndDate <= src.EndDate) {
+						if(src.HasSameValue(item)) {
+							item.StartDate = src.StartDate;
+							item.EndDate = src.EndDate;
+							add.Remove(src);
+							src = item;
+						} else {
+							remove.Add(item);
+						}
+					} else if (item.StartDate < src.StartDate && src.EndDate < item.EndDate) {
+						// item completely overlaps source, if same value, donot add source and exit loop.  otherwise, split item
+						if (src.HasSameValue(item)) {
+							add.Remove(src);
+							break;
+						} else {
+							item.EndDate = src.StartDate.AddDays(-1);
+							var after = (T)item.Clone();
+							after.StartDate = src.EndDate.AddDays(1);
+							add.Add(after);
+						}
+					} else if (src.StartDate <= item.StartDate && item.StartDate <= src.EndDate && src.EndDate < item.EndDate) {
+						// source overlaps the start of item, if same value, extend item.  otherwise, reduce item start date
+						if (src.HasSameValue(item)) {
+							item.StartDate = src.StartDate;
+							add.Remove(src);
+							src = item;
+						} else {
+							item.StartDate = src.EndDate.AddDays(1);
+						}
+					} else if (item.StartDate < src.StartDate && src.StartDate <= item.EndDate && item.EndDate <= src.EndDate) {
+						if (src.HasSameValue(item)) {
+							item.EndDate = src.EndDate;
+							add.Remove(src);
+							src = item;
+						} else {
+							item.EndDate = src.StartDate.AddDays(-1);
+						}
+					}
+				}
+				foreach (var item in remove) {
+					collection.Remove(item);
+				}
+				foreach (var item in add) {
+					collection.Add(item);
 				}
 			}
 		}

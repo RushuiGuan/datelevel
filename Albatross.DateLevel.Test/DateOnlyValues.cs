@@ -43,6 +43,6 @@ namespace Albatross.DateLevel.Test {
 		public static readonly DateOnly Dec1_2022 = new DateOnly(2022, 12, 1);
 		public static readonly DateOnly Dec31_2022 = new DateOnly(2022, 12, 31);
 
-		public static readonly DateOnly MaxSqlDate = new DateOnly(9999, 12, 31);
+		public static readonly DateOnly MaxDate = new DateOnly(9999, 12, 31);
 	}
 }

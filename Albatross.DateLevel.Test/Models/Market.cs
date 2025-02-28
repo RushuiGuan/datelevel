@@ -18,7 +18,7 @@ namespace Albatross.DateLevel.Test {
 
 
 		public List<ContractSpec> ContractSpec { get; set; } = new List<ContractSpec>();
-		public List<SpreadSpec> SpreadSpec { get; set; } = new List<SpreadSpec>();
+		public List<Spec> SpreadSpec { get; set; } = new List<Spec>();
 
 	}
 	public class MarketEntityMap : EntityMap<Market> {

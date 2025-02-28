@@ -8,17 +8,17 @@ namespace Albatross.DateLevel.Test {
 	public class TestRebuildDateLevelSeries {
 		[Fact]
 		public void NoOp() {
-			List<SpreadSpec> list = new List<SpreadSpec>();
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			List<Spec> list = new List<Spec>();
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 		}
 		[Fact]
 		public void Single_Row() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan1_2022
 				}
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list, args => {
 				Assert.Equal(1, args.Key);
 				Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
@@ -27,18 +27,18 @@ namespace Albatross.DateLevel.Test {
 		}
 		[Fact]
 		public void Single_Row_with_multiple_keys() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(0, DateOnlyValues.Jan1_2022, 100) {
+			List<Spec> list = new List<Spec> {
+				new Spec(0, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan1_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan1_2022
 				},
-				new SpreadSpec(2, DateOnlyValues.Jan1_2022, 100) {
+				new Spec(2, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan1_2022
 				}
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list, args => {
 				Assert.Equal(0, args.Key);
 				Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
@@ -57,19 +57,19 @@ namespace Albatross.DateLevel.Test {
 		}
 		[Fact]
 		public void Two_Row_Diff() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100){
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100){
 					EndDate = DateOnlyValues.Jan1_2022
 				},
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 200){
+				new Spec(1, DateOnlyValues.Jan1_2022, 200){
 					EndDate = DateOnlyValues.Jan1_2022
 				}
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list,
 				args => {
 					Assert.Equal(DateOnlyValues.Feb1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 				},
 				args => {
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
@@ -79,30 +79,30 @@ namespace Albatross.DateLevel.Test {
 		}
 		[Fact]
 		public void Two_Row_Same() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list,
 				args => {
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(100, args.Value);
 				}
 			);
 		}
 		[Fact]
 		public void Three_Row_Diff() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100){ EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 300) { EndDate = DateOnlyValues.Jan1_2022 },
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100){ EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Jan1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Mar1_2022, 300) { EndDate = DateOnlyValues.Jan1_2022 },
 			};
-			var input = new TestAsyncEnumerableQuery<SpreadSpec>(list);
+			var input = new TestAsyncEnumerableQuery<Spec>(list);
 			var items = input.Where(args => args.Key == 1);
-			items.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
-			Assert.Collection((IEnumerable<SpreadSpec>)input,
+			items.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
+			Assert.Collection((IEnumerable<Spec>)input,
 				args => {
 					Assert.Equal(DateOnlyValues.Feb1_2022, args.StartDate);
 					Assert.Equal(DateOnlyValues.Feb28_2022, args.EndDate);
@@ -113,34 +113,34 @@ namespace Albatross.DateLevel.Test {
 				},
 				args => {
 					Assert.Equal(DateOnlyValues.Mar1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 				}
 			);
 		}
 		[Fact]
 		public void Three_Row_Same() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Mar1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list,
 				args => {
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(100, args.Value);
 				}
 			);
 		}
 		[Fact]
 		public void Three_Row_Mixed() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			Assert.Collection(list,
 				args => {
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
@@ -149,7 +149,7 @@ namespace Albatross.DateLevel.Test {
 				},
 				args => {
 					Assert.Equal(DateOnlyValues.Mar1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(200, args.Value);
 				}
 			);
@@ -157,20 +157,20 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Three_Row_Mixed_With_Multiple_Keys() {
-			List<SpreadSpec> list = new List<SpreadSpec> {
-				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+			List<Spec> list = new List<Spec> {
+				new Spec(1, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(1, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
 
-				new SpreadSpec(2, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(2, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(2, DateOnlyValues.Mar1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(2, DateOnlyValues.Jan1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(2, DateOnlyValues.Feb1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(2, DateOnlyValues.Mar1_2022, 100) { EndDate = DateOnlyValues.Jan1_2022 },
 
-				new SpreadSpec(3, DateOnlyValues.Jan1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(3, DateOnlyValues.Feb1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
-				new SpreadSpec(3, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(3, DateOnlyValues.Jan1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(3, DateOnlyValues.Feb1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
+				new Spec(3, DateOnlyValues.Mar1_2022, 200) { EndDate = DateOnlyValues.Jan1_2022 },
 			};
-			list.RebuildDateLevelSeries<SpreadSpec, int>(args => list.Remove(args));
+			list.RebuildDateLevelSeries<Spec, int>(args => list.Remove(args));
 			list = list.OrderBy(x => x.Key).ThenBy(x => x.StartDate).ToList();
 			Assert.Collection(list,
 				args => {
@@ -182,19 +182,19 @@ namespace Albatross.DateLevel.Test {
 				args => {
 					Assert.Equal(1, args.Key);
 					Assert.Equal(DateOnlyValues.Mar1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(200, args.Value);
 				},
 				args => {
 					Assert.Equal(2, args.Key);
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(100, args.Value);
 				},
 				args => {
 					Assert.Equal(3, args.Key);
 					Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
-					Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+					Assert.Equal(DateOnlyValues.MaxDate, args.EndDate);
 					Assert.Equal(200, args.Value);
 				}
 			);
