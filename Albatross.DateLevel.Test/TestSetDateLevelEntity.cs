@@ -468,6 +468,7 @@ namespace Albatross.DateLevel.Test {
 				}
 			);
 		}
+
 		static int Compare(SpreadSpec x, SpreadSpec y) => x.StartDate.CompareTo(y.StartDate);
 		/// set 3
 		[Fact]
@@ -827,6 +828,7 @@ namespace Albatross.DateLevel.Test {
 				}
 			);
 		}
+
 		[Fact]
 		public void Mar100_Jul200_Sep300_Apr150_Insert() {
 			var list = new List<SpreadSpec>();
@@ -860,6 +862,7 @@ namespace Albatross.DateLevel.Test {
 				}
 			);
 		}
+
 		[Fact]
 		public void Mar100_Jul200_Sep300_Nov400_Apr150_Insert() {
 			var list = new List<SpreadSpec>();
@@ -894,6 +897,7 @@ namespace Albatross.DateLevel.Test {
 				}
 			);
 		}
+		
 		[Fact]
 		public void Mar100_Jul200_Sep300_Insert() {
 			var list = new List<SpreadSpec>();
@@ -905,6 +909,7 @@ namespace Albatross.DateLevel.Test {
 				EndDate = DateOnlyValues.Nov30_2022,
 			}, true));
 		}
+
 		[Fact]
 		public void Mar100_Jul200_Jun300_Insert() {
 			var list = new List<SpreadSpec>();
@@ -917,6 +922,7 @@ namespace Albatross.DateLevel.Test {
 			}, true));
 		}
 
+		// this use case, the end date of the new record is the max end date
 		[Fact]
 		public void SameValue_Insert() {
 			var list = new List<SpreadSpec> {
@@ -948,8 +954,46 @@ namespace Albatross.DateLevel.Test {
 				Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
 			});
 		}
+
+		/// <summary>
+		/// The new record overlaps a single existing record.
+		/// </summary>
 		[Fact]
-		public void SameValue_Insert2() {
+		public void SameValue_Insert2_0() {
+			var list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
+					EndDate = DateOnlyValues.Mar31_2022
+				},
+				new SpreadSpec(1, DateOnlyValues.Apr1_2022, 100) {
+					EndDate = DateOnlyValues.Jun30_2022,
+				},
+				new SpreadSpec(1, DateOnlyValues.Jul1_2022, 100) {
+					EndDate = DateOnlyValues.Oct31_2022,
+				},
+				new SpreadSpec(1, DateOnlyValues.Nov1_2022, 100) {
+					EndDate = DateOnlyValues.MaxSqlDate
+				},
+			};
+			list.SetDateLevel<SpreadSpec, int>(new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) {
+				EndDate = DateOnlyValues.Jul1_2022
+			}, true);
+			list.Sort(Compare);
+			Assert.Collection(list, args => {
+				Assert.Equal(DateOnlyValues.Jan1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.Mar31_2022, args.EndDate);
+			},
+			args => {
+				Assert.Equal(DateOnlyValues.Apr1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.Oct31_2022, args.EndDate);
+			},
+			args => {
+				Assert.Equal(DateOnlyValues.Nov1_2022, args.StartDate);
+				Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
+			});
+		}
+
+		[Fact]
+		public void SameValue_Insert2_1() {
 			var list = new List<SpreadSpec> {
 				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Mar31_2022
@@ -981,6 +1025,7 @@ namespace Albatross.DateLevel.Test {
 				Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
 			});
 		}
+	
 		[Fact]
 		public void SameValue_Insert3() {
 			var list = new List<SpreadSpec> {
@@ -1011,6 +1056,7 @@ namespace Albatross.DateLevel.Test {
 				Assert.Equal(DateOnlyValues.MaxSqlDate, args.EndDate);
 			});
 		}
+	
 		[Fact]
 		public void SameValue_Append() {
 			var list = new List<SpreadSpec> {

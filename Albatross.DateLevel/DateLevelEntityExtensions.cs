@@ -79,11 +79,13 @@ namespace Albatross.DateLevel {
 					if (after.Length == 0) {
 						throw new InvalidOperationException($"Cannot insert date level item at the end of time series or within the start date and the end date of an existing date level entry");
 					} else {
+						bool added = false;
 						foreach (var item in after) {
-							// if the end date of the found record is before the end date of the new record, simply remove the found record
-							if (item.EndDate < src.EndDate) {
+							// if the end date of the found record is on or before the end date of the new record, simply remove the found record and add the new record
+							if (item.EndDate <= src.EndDate) {
 								collection.Remove(item);
 							} else {
+								added = true;
 								// here a record has been found to overlap the end date of the new record
 								// only 1 of this kind of record should be found
 								var changed = !item.HasSameValue(src);
@@ -98,6 +100,9 @@ namespace Albatross.DateLevel {
 									src = item;
 								}
 							}
+						}
+						if (!added) {
+							collection.Add(src);
 						}
 					}
 				}
