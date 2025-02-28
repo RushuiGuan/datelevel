@@ -192,18 +192,32 @@ namespace Albatross.DateLevel {
 							item.EndDate = src.StartDate.AddDays(-1);
 							yield return item;
 						}
-					} else {
-						if (src.EndDate <= item.StartDate.AddDays(-1) || src.StartDate >= item.EndDate.AddDays(1)) {
+					} else if (src.EndDate == item.StartDate.AddDays(-1)) {
+						if (src.HasSameValue(item)) {
 							isContinuous = true;
+							item.StartDate = src.StartDate;
+							src = item;
+						} else {
+							yield return item;
 						}
+					} else if (src.StartDate == item.EndDate.AddDays(1)) {
+						if (src.HasSameValue(item)) {
+							isContinuous = true;
+							item.EndDate = src.EndDate;
+							src = item;
+						} else {
+							yield return item;
+						}
+					} else {
 						yield return item;
 					}
 				}
 			}
-			if(!isContinuous && !isEmpty) {
+			// yield return first so that the data is as closed to correct as possible.  caller might try catch the exception and it can still receive data close to correct
+			yield return src;
+			if (!isContinuous && !isEmpty) {
 				throw new ArgumentException($"Cannot add this date level item since it will break the continuity of dates in the series.  Adjust its start date and end date to fix");
 			}
-			yield return src;
 		}
 
 		/// <summary>
