@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 
 namespace Albatross.DateLevel {
@@ -29,6 +30,7 @@ namespace Albatross.DateLevel {
 		/// <param name="collection"></param>
 		/// <param name="src"></param>
 		/// <param name="insert"></param>
+		[Obsolete("Use SetDateLevel<T>(this IEnumerable<T> collection, T src) instead")]
 		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src, bool insert)
 			where K : IEquatable<K>
 			where T : DateLevelEntity<K> {
@@ -137,69 +139,71 @@ namespace Albatross.DateLevel {
 			}
 		}
 
-		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src)
+		public static IEnumerable<T> SetDateLevel<T, K>(this IEnumerable<T> collection, T src)
 			where K : IEquatable<K>
 			where T : DateLevelEntity<K> {
-			if (src.StartDate > src.EndDate) {
-				throw new ArgumentException("Start date cannot be greater than end date");
-			}
-			if (collection.Count == 0) {
-				src.EndDate = IDateLevelEntity.MaxEndDate;
-				collection.Add(src);
-				return;
-			} else {
-				var remove = new List<T>();
-				var add = new List<T>{
-					src 
-				};
-				foreach (var item in collection.Where(x => x.Key.Equals(src.Key))) {
-					// source completely overlaps item, if same value, extend item.  otherwise remove item
+
+			if (src.StartDate > src.EndDate) { throw new ArgumentException("Start date cannot be greater than end date"); }
+			bool isContinuous = false;
+			bool isEmpty = true;
+			foreach (var item in collection) {
+				if (!item.Key.Equals(src.Key)) {
+					yield return item;
+				} else {
+					isEmpty = false;
+					// source completely overlaps item, if same value, extend current and replace source with current.  otherwise do nothing
 					if (src.StartDate <= item.StartDate && item.EndDate <= src.EndDate) {
-						if(src.HasSameValue(item)) {
+						isContinuous = true;
+						if (src.HasSameValue(item)) {
 							item.StartDate = src.StartDate;
 							item.EndDate = src.EndDate;
-							add.Remove(src);
 							src = item;
-						} else {
-							remove.Add(item);
 						}
 					} else if (item.StartDate < src.StartDate && src.EndDate < item.EndDate) {
-						// item completely overlaps source, if same value, donot add source and exit loop.  otherwise, split item
+						isContinuous = true;
+						// item completely overlaps source, if same value, do nothing.  otherwise split the item
 						if (src.HasSameValue(item)) {
-							add.Remove(src);
-							break;
+							src = item;
 						} else {
-							item.EndDate = src.StartDate.AddDays(-1);
 							var after = (T)item.Clone();
 							after.StartDate = src.EndDate.AddDays(1);
-							add.Add(after);
+							// note that item.EndDate is modified.  therefore after.EndDate should be set first.
+							after.EndDate = item.EndDate;
+							item.EndDate = src.StartDate.AddDays(-1);
+							yield return item;
+							yield return after;
 						}
 					} else if (src.StartDate <= item.StartDate && item.StartDate <= src.EndDate && src.EndDate < item.EndDate) {
+						isContinuous = true;
 						// source overlaps the start of item, if same value, extend item.  otherwise, reduce item start date
 						if (src.HasSameValue(item)) {
 							item.StartDate = src.StartDate;
-							add.Remove(src);
 							src = item;
 						} else {
 							item.StartDate = src.EndDate.AddDays(1);
+							yield return item;
 						}
 					} else if (item.StartDate < src.StartDate && src.StartDate <= item.EndDate && item.EndDate <= src.EndDate) {
+						isContinuous = true;
 						if (src.HasSameValue(item)) {
 							item.EndDate = src.EndDate;
-							add.Remove(src);
 							src = item;
 						} else {
 							item.EndDate = src.StartDate.AddDays(-1);
+							yield return item;
 						}
+					} else {
+						if (src.EndDate <= item.StartDate.AddDays(-1) || src.StartDate >= item.EndDate.AddDays(1)) {
+							isContinuous = true;
+						}
+						yield return item;
 					}
 				}
-				foreach (var item in remove) {
-					collection.Remove(item);
-				}
-				foreach (var item in add) {
-					collection.Add(item);
-				}
 			}
+			if(!isContinuous && !isEmpty) {
+				throw new ArgumentException($"Cannot add this date level item since it will break the continuity of dates in the series.  Adjust its start date and end date to fix");
+			}
+			yield return src;
 		}
 
 		/// <summary>

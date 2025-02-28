@@ -7,8 +7,8 @@ namespace Albatross.DateLevel.Test {
 	public class TestGetDateLevelEntityByDate {
 		[Fact]
 		public void No_Row() {
-			List<Spec> list = new List<Spec> {
-				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<SpreadSpec> list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				}
 			};
@@ -19,8 +19,8 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Single_Row() {
-			List<Spec> list = new List<Spec> {
-				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<SpreadSpec> list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				}
 			};
@@ -33,17 +33,17 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Single_Row_Max_Date() {
-			List<Spec> list = new List<Spec> {
-				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<SpreadSpec> list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				},
-				new Spec(1, DateOnlyValues.Feb1_2022, 100) {
+				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) {
 					EndDate = DateOnlyValues.Feb28_2022
 				},
-				new Spec(1, DateOnlyValues.Mar1_2022, 100) {
+				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) {
 					EndDate = DateOnlyValues.Mar31_2022
 				},
-				new Spec(1, DateOnlyValues.Apr1_2022, 100)
+				new SpreadSpec(1, DateOnlyValues.Apr1_2022, 100)
 			};
 			var result = list.Effective(new DateOnly(2022, 4, 10));
 			Assert.NotNull(result);
@@ -54,20 +54,20 @@ namespace Albatross.DateLevel.Test {
 
 		[Fact]
 		public void Multiple_Rows() {
-			List<Spec> list = new List<Spec> {
-				new Spec(1, DateOnlyValues.Jan1_2022, 100) {
+			List<SpreadSpec> list = new List<SpreadSpec> {
+				new SpreadSpec(1, DateOnlyValues.Jan1_2022, 100) {
 					EndDate = DateOnlyValues.Jan31_2022
 				},
-				new Spec(1, DateOnlyValues.Feb1_2022, 100) {
+				new SpreadSpec(1, DateOnlyValues.Feb1_2022, 100) {
 					EndDate = DateOnlyValues.Feb28_2022
 				},
-				new Spec(1, DateOnlyValues.Mar1_2022, 100) {
+				new SpreadSpec(1, DateOnlyValues.Mar1_2022, 100) {
 					EndDate = DateOnlyValues.Mar31_2022
 				},
-				new Spec(1, DateOnlyValues.Apr1_2022, 100) {
+				new SpreadSpec(1, DateOnlyValues.Apr1_2022, 100) {
 					EndDate = DateOnlyValues.Apr30_2022
 				},
-				new Spec(2, DateOnlyValues.Apr1_2022, 100)
+				new SpreadSpec(2, DateOnlyValues.Apr1_2022, 100)
 			};
 			var result = list.Effective(new DateOnly(2022, 4, 10));
 			Assert.NotNull(result);
