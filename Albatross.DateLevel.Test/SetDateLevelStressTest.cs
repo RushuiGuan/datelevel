@@ -34,6 +34,7 @@ namespace Albatross.DateLevel.Test {
 		[Theory]
 		[InlineData("2021-01-01", "2021-12-31", 10000)]
 		[InlineData("2021-01-01", "2021-01-01", 10)]
+		[InlineData("2021-01-01", "2021-01-31", 10000)]
 		[InlineData("2020-01-01", "2025-12-31", 10000)]
 		public void StressTest(string seriesStart_text, string seriesEnd_text, int count) {
 			for (int i = 0; i < count; i++) {
