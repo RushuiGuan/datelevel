@@ -143,11 +143,17 @@ namespace Albatross.DateLevel {
 			where K : IEquatable<K>
 			where T : DateLevelEntity<K> {
 
+			return SetDateLevel<T>(collection, src, (x, y) => x.Key.Equals(y.Key));
+		}
+
+		public static IEnumerable<T> SetDateLevel<T>(this IEnumerable<T> collection, T src, Func<T, T, bool> isSameSeries)
+			where T : DateLevelEntity {
+
 			if (src.StartDate > src.EndDate) { throw new ArgumentException("Start date cannot be greater than end date"); }
 			bool isContinuous = false;
 			bool isEmpty = true;
 			foreach (var item in collection) {
-				if (!item.Key.Equals(src.Key)) {
+				if (!isSameSeries(item, src)) {
 					yield return item;
 				} else {
 					isEmpty = false;
