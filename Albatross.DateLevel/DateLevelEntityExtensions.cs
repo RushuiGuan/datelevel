@@ -193,16 +193,16 @@ namespace Albatross.DateLevel {
 							yield return item;
 						}
 					} else if (src.EndDate == item.StartDate.AddDays(-1)) {
+						isContinuous = true;
 						if (src.HasSameValue(item)) {
-							isContinuous = true;
 							item.StartDate = src.StartDate;
 							src = item;
 						} else {
 							yield return item;
 						}
 					} else if (src.StartDate == item.EndDate.AddDays(1)) {
+						isContinuous = true;
 						if (src.HasSameValue(item)) {
-							isContinuous = true;
 							item.EndDate = src.EndDate;
 							src = item;
 						} else {

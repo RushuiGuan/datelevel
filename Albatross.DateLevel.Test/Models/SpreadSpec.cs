@@ -2,13 +2,13 @@
 
 namespace Albatross.DateLevel.Test {
 	public class SpreadSpec : DateLevelEntity<int> {
-		public SpreadSpec(int marketId, DateOnly startDate, decimal value) : base(startDate) {
+		public SpreadSpec(int marketId, DateOnly startDate, int value) : base(startDate) {
 			this.MarketId = marketId;
 			this.Value = value;
 		}
 
 
-		public SpreadSpec(int marketId, DateOnly startDate, DateOnly endDate, decimal value) : base(startDate) {
+		public SpreadSpec(int marketId, DateOnly startDate, DateOnly endDate, int value) : base(startDate) {
 			this.MarketId = marketId;
 			this.EndDate = endDate;
 			this.Value = value;
@@ -16,7 +16,7 @@ namespace Albatross.DateLevel.Test {
 
 		public int Id { get; set; }
 		public int MarketId { get; set; }
-		public decimal Value { get; init; }
+		public int Value { get; init; }
 
 		public override int Key => MarketId;
 
