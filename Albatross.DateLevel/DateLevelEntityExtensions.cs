@@ -1,158 +1,22 @@
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 
 namespace Albatross.DateLevel {
 	public static class DateLevelEntityExtensions {
-		/// <summary>
-		/// For DateLevel entries, two rules apply
-		/// 1. there should be no gap between the first StartDate and <see cref="DateLevelEntity.MaxEndDate"/>
-		/// 2. there should be no overlap of dates among entries.
-
-		/// Provided the data level collection for a single entity, this method will create a new entry for the series and adjust the end date for other items within the the same entity 
-		/// if necessary.  There are 3 possible operations.
-		/// 1. insert operation with start date only: create a record in the middle of the time series with only a start date.  End date is determined automatically.
-		/// 2. insert operation with both start date and end date: create a record in the middle of time series.  Adjust the existing overrlapping entries accordingly.
-		/// 3. append operation with only start date: create an entry with a start date and max end date and remove any current overlapping entries.
-		///
-		/// If the insert flag is false, the method will always append the record by setting the end date as the <see cref="DateLevelEntity.MaxEndDate"/>
-		/// The method will remove any existing record between the start date and the end date
-		/// 
-		/// If the insert flag is true and the end date of the record equals <see cref="DateLevelEntity.MaxEndDate"/>, the method will insert using the start date only.  
-		/// If the end date of the record is specified, the method will insert only if the end date is one day before the start date of the next record
-		/// 
-		/// If a parent entity is used, the DeleteBehavior between the DateLevelEntity and the parent entity should be DeleteBehavior.ClientCascade or DeleteBehavior.Cascade
-		/// This is because of the mismatch of behavior EFCore Cascade delete and sql server cascade delete.  <see href="https://github.com/dotnet/efcore/issues/10066"/>
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <typeparam name="K"></typeparam>
-		/// <param name="collection"></param>
-		/// <param name="src"></param>
-		/// <param name="insert"></param>
-		[Obsolete("Use SetDateLevel<T>(this IEnumerable<T> collection, T src) instead")]
-		public static void SetDateLevel<T, K>(this ICollection<T> collection, T src, bool insert)
-			where K : IEquatable<K>
-			where T : DateLevelEntity<K> {
-			if (insert) {
-				// when insert flag is true and EndDate is MaxEndDate, the code below will try to auto determine the correct end date of the new record
-				if (src.EndDate == IDateLevelEntity.MaxEndDate) {
-					// assuming that date leve series are correct, find the next record of the series
-					var after = collection.Where(args => args.Key.Equals(src.Key) && args.StartDate >= src.StartDate)
-						.OrderBy(args => args.StartDate).FirstOrDefault();
-					// if not found, the new record will be inserted as the last record and its end date will be set to max
-					if (after == null) {
-						src.EndDate = IDateLevelEntity.MaxEndDate;
-						collection.Add(src);
-					} else {
-						var changed = !after.HasSameValue(src);
-						if (changed) {
-							// if the next record is diff but they have the same start date, remove it and add the new record.  remember to set the end date of
-							// the new record to the end date of the next record
-							if (after.StartDate == src.StartDate) {
-								src.EndDate = after.EndDate;
-								collection.Remove(after);
-								collection.Add(src);
-							} else {
-								// if the start date is diff,  set the end date of the new record to the day before the start date of the next record
-								// add the new record
-								src.EndDate = after.StartDate.AddDays(-1);
-								collection.Add(src);
-							}
-						} else {
-							// if the next record has the same value, simply change the start date of the next record
-							// remember to set next record as the new record
-							after.StartDate = src.StartDate;
-							src = after;
-						}
-					}
-				} else {
-					// code path here is for inserting a new record with the specified start date and end date.
-					// it assumes that the series is built correctly
-					// if the collection is empty, we cannot insert a new record with a specific end date, because it will break rule #1 and create an incorrect series.
-					// Also, inserting a new record within the start date and end date of an existing record is an impossible operation that cannot be addressed
-					// in this code path. Therefore an exception will be throw when this scenario is detected
-					// 
-					// first find all the records with the start date between the start date and the end date of the new record (inclusive)
-					// we should find at least 1 the series is built correctly.
-					var after = collection
-						.Where(args => args.Key.Equals(src.Key) && args.StartDate >= src.StartDate && args.StartDate <= src.EndDate)
-						.ToArray();
-					if (after.Length == 0) {
-						throw new InvalidOperationException($"Cannot insert date level item at the end of time series or within the start date and the end date of an existing date level entry");
-					} else {
-						bool added = false;
-						foreach (var item in after) {
-							// if the end date of the found record is on or before the end date of the new record, simply remove the found record and add the new record
-							if (item.EndDate <= src.EndDate) {
-								collection.Remove(item);
-							} else {
-								added = true;
-								// here a record has been found to overlap the end date of the new record
-								// only 1 of this kind of record should be found
-								var changed = !item.HasSameValue(src);
-								if (changed) {
-									// if the value is different, set the start date of the current record to be the end date + 1 of the new record
-									item.StartDate = src.EndDate.AddDays(1);
-									collection.Add(src);
-								} else {
-									// if the value is the same as the new record, simply change the start date of the current record
-									// remember to set it as the new record
-									item.StartDate = src.StartDate;
-									src = item;
-								}
-							}
-						}
-						if (!added) {
-							collection.Add(src);
-						}
-					}
-				}
-			} else {
-				// this code path here will always have the end date of the new record to MaxEndDate
-				var items = collection.Where(args => args.Key.Equals(src.Key) && args.StartDate >= src.StartDate).ToArray();
-				bool hasExisting = false;
-				foreach (var item in items) {
-					if (!hasExisting && item.HasSameValue(src)) {
-						hasExisting = true;
-						item.EndDate = IDateLevelEntity.MaxEndDate;
-						item.StartDate = src.StartDate;
-						src = item;
-					} else {
-						collection.Remove(item);
-					}
-				}
-				if (!hasExisting) {
-					src.EndDate = IDateLevelEntity.MaxEndDate;
-					collection.Add(src);
-				}
-			}
-			var before = collection.Where(args => args.Key.Equals(src.Key) && args.StartDate < src.StartDate)
-				.OrderByDescending(args => args.StartDate).FirstOrDefault();
-			if (before != null) {
-				if (before.HasSameValue(src)) {
-					before.EndDate = src.EndDate;
-					collection.Remove(src);
-				} else {
-					before.EndDate = src.StartDate.AddDays(-1);
-				}
-			}
-		}
-
 		public static IEnumerable<T> SetDateLevel<T, K>(this IEnumerable<T> collection, T src)
 			where K : IEquatable<K>
 			where T : DateLevelEntity<K> {
-
 			return SetDateLevel<T>(collection, src, (x, y) => x.Key.Equals(y.Key));
 		}
 
-		public static IEnumerable<T> SetDateLevel<T>(this IEnumerable<T> collection, T src, Func<T, T, bool> isSameSeries)
+		public static IEnumerable<T> SetDateLevel<T>(this IEnumerable<T> series, T src, Func<T, T, bool> isSameSeries)
 			where T : DateLevelEntity {
 
 			if (src.StartDate > src.EndDate) { throw new ArgumentException("Start date cannot be greater than end date"); }
 			bool isContinuous = false;
 			bool isEmpty = true;
-			foreach (var item in collection) {
+			foreach (var item in series) {
 				if (!isSameSeries(item, src)) {
 					yield return item;
 				} else {
@@ -225,6 +89,8 @@ namespace Albatross.DateLevel {
 				throw new ArgumentException($"Cannot add this date level item since it will break the continuity of dates in the series.  Adjust its start date and end date to fix");
 			}
 		}
+		public static IEnumerable<T> SetDateLevel<T>(this IEnumerable<T> series, T src) where T : DateLevelEntity 
+			=> SetDateLevel<T>(series, src, (x, y) => true);
 
 		/// <summary>
 		/// This function will attempt to update date level values between <paramref name="start"/> and <paramref name="endDate"/>.  If the endDate is not specified, 
@@ -234,29 +100,18 @@ namespace Albatross.DateLevel {
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <typeparam name="K"></typeparam>
-		/// <param name="collection"></param>
+		/// <param name="series"></param>
 		/// <param name="clone">function pointer to clone an instance of T</param>
 		/// <param name="modify">action pointer to modify the value</param>
 		/// <param name="start"></param>
 		/// <param name="endDate"></param>
 		/// <exception cref="ArgumentException"></exception>
-		public static void UpdateDateLevel<T>(this ICollection<T> collection, Action<T> modify, DateOnly start, DateOnly? endDate, bool rebuild = true)
+		public static void UpdateDateLevel<T>(this ICollection<T> series, Action<T> modify, DateOnly start, DateOnly end, bool rebuild = true)
 			where T : DateLevelEntity {
-			if (start > endDate) {
+			if (start > end) {
 				throw new ArgumentException("Start date cannot be greater than end date");
 			}
-			DateOnly end;
-			if (endDate == null) {
-				var nextStart = collection.Where(x => x.StartDate > start).Min<T, DateOnly?>(x => x.StartDate);
-				if (nextStart == null) {
-					end = IDateLevelEntity.MaxEndDate;
-				} else {
-					end = nextStart.Value.AddDays(-1);
-				}
-			} else {
-				end = endDate.Value;
-			}
-			foreach (var current in collection.ToArray()) {
+			foreach (var current in series.ToArray()) {
 				if (end < current.StartDate || current.EndDate < start) {
 					// no overlap
 					continue;
@@ -268,13 +123,13 @@ namespace Albatross.DateLevel {
 					var after = (T)current.Clone();
 					after.StartDate = end.AddDays(1);
 					after.EndDate = current.EndDate;
-					collection.Add(after);
+					series.Add(after);
 
 					var newItem = (T)current.Clone();
 					modify(newItem);
 					newItem.StartDate = start;
 					newItem.EndDate = end;
-					collection.Add(newItem);
+					series.Add(newItem);
 
 					current.EndDate = start.AddDays(-1);
 				} else if (start <= current.StartDate && current.StartDate <= end && end < current.EndDate) {
@@ -282,56 +137,48 @@ namespace Albatross.DateLevel {
 					modify(newItem);
 					newItem.StartDate = current.StartDate;
 					newItem.EndDate = end;
-					collection.Add(newItem);
+					series.Add(newItem);
 					current.StartDate = end.AddDays(1);
 				} else if (current.StartDate < start && start <= current.EndDate && end >= current.EndDate) {
 					var newItem = (T)current.Clone();
 					modify(newItem);
 					newItem.StartDate = start;
 					newItem.EndDate = current.EndDate;
-					collection.Add(newItem);
+					series.Add(newItem);
 					current.EndDate = start.AddDays(-1);
 				}
 			}
 			if (rebuild) {
-				RebuildDateLevelSeries(collection, args => collection.Remove(args));
+				series.RebuildDateLevelSeries(x => series.Remove(x));
 			}
 		}
 
 		/// <summary>
-		/// Provided a date level series data for a single entity, the method will remove the datelevel item with the specified startDate.
-		/// The method will always extend the end date of the previous record if it exists.
+		/// Provided a date level series data for a single entity, the method will set the start date of the series to the new start date by trimming
+		/// the any data prior to the new start date.  The method assume that the series is correctly built.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
-		/// <param name="set"></param>
-		/// <param name="startDate"></param>
-		/// <param name="remove"></param>
-		public static void DeleteDateLevel<T, K>(this IEnumerable<T> set, K key, DateOnly startDate, Action<T> remove)
-			where T : DateLevelEntity<K>
-			where K : IEquatable<K> {
-			set = set.Where(x => x.Key.Equals(key));
-			DeleteDateLevel<T>(set, startDate, remove);
-		}
-
-		/// <summary>
-		/// Provided a date level series data for a single entity, the method will remove the datelevel item with the specified startDate.
-		/// The method will always extend the end date of the previous record if it exists.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="set"></param>
-		/// <param name="startDate"></param>
-		/// <param name="remove"></param>
-		public static void DeleteDateLevel<T>(this IEnumerable<T> set, DateOnly startDate, Action<T> remove)
-			where T : DateLevelEntity {
-			var current = set.Where(args => args.StartDate == startDate).FirstOrDefault();
-			if (current != null) {
-				remove(current);
-				var before = set.Where(args => args.StartDate < current.StartDate)
-					.OrderByDescending(args => args.StartDate)
-					.FirstOrDefault();
-				if (before != null) {
-					before.EndDate = current.EndDate;
+		/// <param name="series"></param>
+		/// <param name="newStartDate"></param>
+		public static IEnumerable<T> TrimStart<T>(this IEnumerable<T> series, DateOnly newStartDate) where T : DateLevelEntity {
+			foreach (var item in series) {
+				if (item.EndDate < newStartDate) {
+					continue;
+				} else if (item.StartDate < newStartDate) {
+					item.StartDate = newStartDate;
 				}
+				yield return item;
+			}
+		}
+	
+		public static IEnumerable<T> TrimEnd<T>(this IEnumerable<T> series, DateOnly newEndDate) where T : DateLevelEntity {
+			foreach (var item in series) {
+				if (item.StartDate > newEndDate) {
+					continue;
+				} else if (item.EndDate > newEndDate) {
+					item.EndDate = newEndDate;
+				}
+				yield return item;
 			}
 		}
 
@@ -405,42 +252,61 @@ namespace Albatross.DateLevel {
 		}
 
 		/// <summary>
-		/// The method will find the date level entries in <paramref name="source"/> that overlap with the given date range.  If the end date is not specified, the method 
-		/// will find the next record in the series and set the end date to the day before its start date.  If the next record does not exist, the end date will be set to 
-		/// the max end date.
+		/// The method will find the date level entries in <paramref name="source"/> that overlap with the given date range.  
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="source"></param>
 		/// <param name="start"></param>
 		/// <param name="end"></param>
 		/// <returns></returns>
-		public static IEnumerable<T> GetOverlappedDateLevelEntities<T, K>(this IEnumerable<T> source, K key, DateOnly start, DateOnly? end)
+		public static IEnumerable<T> GetOverlappedDateLevelEntities<T, K>(this IEnumerable<T> source, K key, DateOnly start, DateOnly end)
 			where T : IDateLevelEntity<K>
 			where K : IEquatable<K> {
 			source = source.Where(x => x.Key.Equals(key));
 			return GetOverlappedDateLevelEntities<T>(source, start, end);
 		}
 		/// <summary>
-		/// The method will find the date level entries in <paramref name="source"/> that overlap with the given date range.  If the end date is not specified, the method 
-		/// will find the next record in the series and set the end date to the day before its start date.  If the next record does not exist, the end date will be set to 
-		/// the max end date.  This method does not require a key, it assumes the supplied source only contains a single date level series.
+		/// The method will find the date level entries in <paramref name="source"/> that overlap with the given date range.
+		/// This method does not require a key, it assumes the supplied source only contains a single date level series.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="source"></param>
 		/// <param name="start"></param>
 		/// <param name="end"></param>
 		/// <returns></returns>
-		public static IEnumerable<T> GetOverlappedDateLevelEntities<T>(this IEnumerable<T> source, DateOnly start, DateOnly? end)
+		public static IEnumerable<T> GetOverlappedDateLevelEntities<T>(this IEnumerable<T> source, DateOnly start, DateOnly end)
 			where T : IDateLevelEntity {
-			if (end == null) {
-				var nextStart = source.Where(x => x.StartDate > start).Min<T, DateOnly?>(x => x.StartDate);
-				if (nextStart == null) {
-					end = IDateLevelEntity.MaxEndDate;
-				} else {
-					end = nextStart.Value.AddDays(-1);
-				}
-			}
 			return source.Where(args => !(start > args.EndDate || end < args.StartDate));
+		}
+
+		public static bool VerifySeries<T>(this IEnumerable<T> series, bool throwException) where T : DateLevelEntity {
+			T? previous = null;
+			foreach (var item in series.OrderBy(x => x.StartDate)) {
+				if (item.StartDate > item.EndDate) {
+					if (throwException) {
+						throw new DateLevelException(item, $"Start date is greater than end date");
+					} else {
+						return false;
+					}
+				} else if (previous != null){
+					if(previous.EndDate >= item.StartDate) {
+						if (throwException) {
+							throw new DateLevelException(item, $"Start date overlaps with previous end date");
+						} else {
+							return false;
+						}
+					}else if(previous.EndDate.AddDays(1) < item.StartDate) {
+						if (throwException) {
+							throw new DateLevelException(item, $"Start date is not continuous from previous end date");
+						} else {
+							return false;
+						}
+					}
+					return false;
+				}
+				previous = item;
+			}
+			return true;
 		}
 	}
 }
